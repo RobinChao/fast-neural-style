@@ -125,6 +125,32 @@ class InstanceNormalization(torch.nn.Module):
         self.scale.data.uniform_()
         self.shift.data.zero_()
 
+    def hack_onnx(self, x, out):
+        """
+        Temporary hack to replace the entire module with InstanceNorm -
+        for some reason this code chose to implement instance norm from scratch
+        instead of using PyTorch functionality
+
+        TODO: move it into PyTorch codebase
+        """
+        out_tensor = out.data
+
+        class ExportProxy(torch.autograd.Function):
+            @staticmethod
+            def symbolic(g, x, scale, shift):
+                return g.op('InstanceNormalization', x, scale, shift)
+
+            @staticmethod
+            def forward(ctx, x, scale, shift):
+                return out_tensor
+
+            @staticmethod
+            def backward(ctx, *gargs, **gkwargs):
+                raise RuntimeError("This approach is meant for inference export only")
+
+        return ExportProxy.apply(x, self.scale, self.shift)
+
+
     def forward(self, x):
         n = x.size(2) * x.size(3)
         t = x.view(x.size(0), x.size(1), n)
@@ -137,4 +163,6 @@ class InstanceNormalization(torch.nn.Module):
         shift_broadcast = shift_broadcast.expand_as(x)
         out = (x - mean) / torch.sqrt(var + self.eps)
         out = out * scale_broadcast + shift_broadcast
+        if torch._C._jit_is_tracing(x):
+            out = self.hack_onnx(x, out)
         return out
