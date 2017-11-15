@@ -1,4 +1,24 @@
-# fast-neural-style :city_sunrise: :rocket:
+# fast-neural-style (expanded with ONNX-Caffe2 integration) :city_sunrise: :rocket:
+
+This is an example of how `abhiskk/fast-neural-style` can be expanded to export trained model to [ONNX](http://onnx.ai) and later consume in any of the supported backends.
+
+As of today, you'd need to install [onnx](https://github.com/onnx/onnx), [onnx-caffe2](https://github.com/onnx/onnx-caffe2) and [Caffe2](https://caffe2.ai/) from source.
+
+Exporting the model is the matter of add `--export_model <filename.onnx>`
+```
+python neural_style/neural_style.py eval --content-image images/content-images/amber.jpg --model saved-models/starry-night.pth --output-image styled.jpg --cuda 0 --content-scale 2 --export_onnx starry-night.onnx
+```
+
+After that eval can be invoked with `.onnx` file directly and would invoke Caffe2 backend (see [neural_style/neural_style.py](neural_style/neural_style.py for how it's invoked):
+
+```
+python neural_style/neural_style.py eval --content-image images/content-images/amber.jpg --model starry-night.onnx --output-image styled.jpg --cuda 1 --content-scale 2
+```
+
+Sample converted ONNX model is also [checked into the repo](onnx-models/starry-night.onnx).
+
+## Original description
+
 This repository contains a pytorch implementation of an algorithm for artistic style transfer. The algorithm can be used to mix the content of an image with the style of another image. For example, here is a photograph of a door arch rendered in the style of a stained glass painting.
 
 The model uses the method described in [Perceptual Losses for Real-Time Style Transfer and Super-Resolution](https://arxiv.org/abs/1603.08155) along with [Instance Normalization](https://arxiv.org/pdf/1607.08022.pdf). The saved-models for examples shown in the README can be downloaded from [here](https://www.dropbox.com/s/gtwnyp9n49lqs7t/saved-models.zip?dl=0).
