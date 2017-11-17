@@ -138,7 +138,7 @@ class InstanceNormalization(torch.nn.Module):
         class ExportProxy(torch.autograd.Function):
             @staticmethod
             def symbolic(g, x, scale, shift):
-                return g.op('InstanceNormalization', x, scale, shift)
+                return g.op('InstanceNormalization', x, scale, shift, epsilon_f=self.eps)
 
             @staticmethod
             def forward(ctx, x, scale, shift):
